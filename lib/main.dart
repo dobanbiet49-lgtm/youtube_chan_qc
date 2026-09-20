@@ -34,7 +34,6 @@ class _YoutubeLightScreenState extends State<YoutubeLightScreen> {
   late final WebViewController _controller;
   bool _isLoading = true;
   
-  // Danh sách lưu lịch sử các video đã xem (gồm Tiêu đề và URL)
   final List<Map<String, String>> _history = [];
 
   @override
@@ -56,7 +55,6 @@ class _YoutubeLightScreenState extends State<YoutubeLightScreen> {
               _isLoading = false;
             });
             
-            // Nếu là trang xem video (có chứa /watch?), tự động lưu vào lịch sử
             if (url.contains('/watch?')) {
               _controller.runJavaScriptReturningResult('document.title').then((title) {
                 String cleanTitle = title.toString().replaceAll('"', '');
@@ -68,11 +66,18 @@ class _YoutubeLightScreenState extends State<YoutubeLightScreen> {
               });
             }
 
-            // Script chặn quảng cáo gọn nhẹ, tự động tua nhanh và ẩn banner
+            // Script chặn triệt để banner quảng cáo và video quảng cáo
             _controller.runJavaScript('''
               (function() {
                 var style = document.createElement('style');
-                style.innerHTML = '.video-ads, .ytp-ad-module, ytd-promoted-video-renderer, .ad-showing { display: none !important; }';
+                style.innerHTML = `
+                  .video-ads, .ytp-ad-module, ytd-promoted-video-renderer, .ad-showing,
+                  ytd-rich-item-renderer:has(span.ytd-badge-supported-renderer),
+                  div[class*="promoted"], section[class*="promoted"],
+                  c-wiz[data-is-sponsored], [aria-label*="Được tài trợ"], [aria-label*="Sponsored"] {
+                    display: none !important;
+                  }
+                `;
                 document.head.appendChild(style);
 
                 setInterval(function() {
@@ -86,7 +91,7 @@ class _YoutubeLightScreenState extends State<YoutubeLightScreen> {
                       v.currentTime = v.duration;
                     }
                   });
-                }, 300);
+                }, 200);
               })();
             ''');
           },
@@ -95,7 +100,6 @@ class _YoutubeLightScreenState extends State<YoutubeLightScreen> {
       ..loadRequest(Uri.parse('https://m.youtube.com'));
   }
 
-  // Hàm mở giao diện xem lịch sử
   void _showHistoryModal() {
     showModalBottomSheet(
       context: context,
